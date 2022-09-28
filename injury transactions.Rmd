@@ -1,0 +1,114 @@
+---
+title: "Untitled"
+author: "Emani Jones"
+date: "2/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+injuries<-read_csv("injuryTransactions.csv")
+```
+```{r}
+injuries%>%mutate_all(funs(tolower))->injuries
+
+```
+
+```{r}
+injuryType<-c('broken','torn','strain','sprain','tear','inflammation','fracture','sore','tight','herniated','contusion','laceration','surgery','concussion','spasm','bruise','fatigue','tendinitis','impingement','rupture','dislocate','infected','hyperextension','blister','irritation','stiffness','anxiety','pain','stress reaction','discomfort','subluxation','injury','weakness','separation','plantar fasciitis','tenderness','jammed','dislocation','infection','migraine','bone spur','cracked','bronchitis','pull','non-baseball', 'bursitis','lacerated','pinched nerve' ,'disc','sports hernia','irregular heartbeat', 'turf toe','tendonitis','chondromalacia',' mononucleosis','loose bodies','appendectomy','respiratory','appendicitis','ulnaritis','shingles','bone chip','sesamoiditis','swollen','virus','cyst','neuritis','vertigo','recovery','kidney stones','injured','illness','swelling','abscess','gout','tendinosis','diverticulitis','stress','cancer','tonsilitis','hyperextended',' scratched cornea','effusion','pneumonia','damage','cellulitis','epicondylitis','kidney stone','costochondritis','influenza','crack','irregular heart beat','concussive symptoms','blood clot' )
+```
+
+```{r}
+tibble(injuryType,isType=T) %>%
+  mutate(colname=str_replace_all(injuryType,'\\s','_'),ignore.case=T) %>%
+  mutate(colname=str_remove_all(colname,'(_\\.\\*)'),ignore.case=T) %>%
+  spread(colname,isType,fill=F) -> injuryTypes
+```
+
+```{r}
+injuries %>%
+  mutate(transactionID=row_number()) %>%
+  group_by(transactionID,description) %>%
+  summarize(matchedTypes=sum(str_detect(description,injuryType))) %>%
+  filter(matchedTypes==0)->unmatched   
+```
+
+```{r}
+unmatched
+```
+```{r}
+
+injuries %>%
+  left_join(injuryTypes,by=character()) %>%
+  filter(str_detect(description,injuryType))->injuryTransactions
+```
+
+```{r}
+bodyPart<-c('shoulder','foot','elbow','knee','hand','wrist','oblique', 'low back','hip','hamstring','quadricep','acl','bicep', 'rib','tricep','ankle','tommy john','thumb','pinkie','index','calf','achilles','pectoral','groin','middle finger',' rotator cuff',' shin','concussion','big toe','forearm','ac joint','neck','flexor', 'head','eye' ,'skull','intercostal','quad', ' adductor',' abdominal','jaw','spinal','heel','arm','lat','patellar','fibular','sinus','ulna','ucl','scapula','lavicle','pinky','ring7, finger',' abdomen','spine','trapezius','respiratory','leg','ear','chest','cervical','core','hamate','heart','side','shin','abductor','labrum','lisfranc','gluteus',' mcl','gluteal','humerus','testicle','teres major','stomach','spleen','orbital','rhomboid','tibia','fibula','torso','kidney','thigh','tonsil','lumbar','meniscus','collarbone','tooth','patella','sc joint','pronator','medial epicondyle','patellar tendon','facial','nail','tailbone','ring finger','fourth finger','fifth finger ','great toe','cartilage',' sports hernia','plantar','lip','nasal','third finger','sternoclavicular joint','nose','appendix','little toe','colon','fifth toe','upper back','lower back','mid-back')
+
+```
+
+```{r}
+tibble(bodyPart,isType=T) %>%
+  mutate(colname=str_replace_all(bodyPart,'\\s','_'),ignore.case=T) %>%
+  mutate(colname=str_remove_all(colname,'(_\\.\\*)'),ignore.case=T) %>%
+  spread(colname,isType,fill=F) -> bodyParts
+```
+
+```{r}
+injuries %>%
+  mutate(transactionID=row_number()) %>%
+  group_by(transactionID,description) %>%
+  summarize(matchedTypes=sum(str_detect(description,bodyPart))) %>%
+  filter(matchedTypes==0)->unmatched2
+```
+
+```{r}
+injuries%>%
+  left_join(bodyParts,by=character()) %>%
+  filter(str_detect(description,bodyPart))->BodyPartsTransactions
+```
+
+```{r}
+injuryTransactions%>%full_join(BodyPartsTransactions,by='description')->injuryTransactionswBodyParts
+```
+
+```{r}
+injuryTransactionswBodyParts%>%select(description,injuryType,bodyPart)->justbodyandinjury
+```
+
+
+```{r}
+side<-c("left","right")
+
+```
+
+```{r}
+tibble(side,isType=T) %>%
+  mutate(colname=str_replace_all(side,'\\s','_'),ignore.case=T) %>%
+  mutate(colname=str_remove_all(colname,'(_\\.\\*)'),ignore.case=T) %>%
+  spread(colname,isType,fill=F) -> sides
+```
+
+```{r}
+
+```
+
+```{r}
+injuries%>%
+  left_join(sides,by=character()) %>%
+  filter(str_detect(description,side))->sideTransactions
+```
+
+```{r}
+justbodyandinjury%>%left_join(sideTransactions,by='description')->injuryTransactionswBodyParts
+```
+
+```{r}
+injuryTransactionswBodyParts%>%write_csv('injuryTransactionswBodyParts.csv')
+```
+
+
