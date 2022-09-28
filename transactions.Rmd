@@ -1,0 +1,92 @@
+---
+title: "Untitled"
+author: "Emani Jones"
+date: "1/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+dat<-read_csv("transactionsWithNames.csv")
+```
+
+```{r}
+library(glue)
+library(tidyverse)
+dat %>%
+  mutate(descriptionWithoutTeam=str_remove_all(description,glue('({locationName}|{nickName}|{teamName}|{firstName}|{lastName})'))) %>%
+  mutate(firstWord=str_extract(descriptionWithoutTeam,'[A-z]+\\s')) ->dat2
+x<-dat2$descriptionWithoutTeam
+dat2['transaction_type']<- NA
+
+```
+
+```{r}
+x%>% grep(pattern = 'free agent',value = TRUE,ignore.case = TRUE)->freeagentsigning
+x%>% grep(pattern = 'released',value = TRUE,ignore.case = TRUE)-> releasedplayer
+x%>% grep(pattern = 'optioned',value = TRUE,ignore.case = TRUE)->optionedplayer
+x%>% grep(pattern = 'claimed',value = TRUE,ignore.case = TRUE)->claimedoffwaivers
+x%>%grep(pattern = 'traded',value = TRUE,ignore.case = TRUE)->traded
+x%>%grep(pattern = 'elected free agency',value = TRUE,ignore.case = TRUE)->electedfreeagency
+x%>%grep(pattern = 'roster status changed',value = TRUE,ignore.case = TRUE)->rosterstatuschanged
+x%>%grep(pattern = 'activated',value = TRUE,ignore.case = TRUE)->activated
+x%>%grep(pattern = 'assigned',value = TRUE,ignore.case = TRUE)->assigned
+x%>%grep(pattern = 'designated',value = TRUE,ignore.case = TRUE)->designated 
+x%>%grep(pattern = 'drafted',value = TRUE,ignore.case = TRUE)->drafted
+x%>% grep(pattern = 'retired',value = TRUE,ignore.case = TRUE)->playerretired
+
+```
+
+
+```{r}
+transactionType <- c('released','optioned','claimed','traded',
+                     'roster status claimed','elected free agency','activated',
+                     'assigned','designated','drafted','retired',
+                     ### addtional types
+                     'purchased','selected the contract',
+                     'sent .* outright','placed .* on the .* injured','placed .* on the .*paternity ','placed .* on the .*bereavement','placed .* on the .*restricted','placed .* on the .*temporarily inactive','placed .* on.*waivers','placed .* on the .*reserve',
+                        'placed .* on the .* disabled','sent .* on a rehab assignment',
+                     'roster status changed',
+                     'recalled','signed','transferred','invited','returned','suspended','loaned','reinstated','died'
+                     )
+```
+
+
+```{r}
+
+
+tibble(transactionType,isType=T) %>%
+  mutate(colname=str_replace_all(transactionType,'\\s','_')) %>%
+  mutate(colname=str_remove_all(colname,'(_\\.\\*)')) %>%
+  spread(colname,isType,fill=F) -> transactionTypes
+```
+
+
+
+
+```{r}
+dat %>%
+  mutate(transactionID=row_number()) %>%
+  group_by(transactionID,description) %>%
+  summarize(matchedTypes=sum(str_detect(description,transactionType))) %>%
+  filter(matchedTypes==0)->unmatched
+```
+
+
+```{r}
+dat %>%
+  left_join(transactionTypes,by=character(),ignore.case=TRUE) %>%
+  filter(str_detect(description,transactionType),ignore.case=TRUE)->transactions
+```
+
+```{r}
+transactions%>%write_csv("transactionsassigned.csv")
+```
+
+```{r}
+```
+
